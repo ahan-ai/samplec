@@ -11,7 +11,7 @@ void *thread2(void*);
 typedef struct shm_queue
 {
     void *buf;
-    size_t len;
+    size_t len; // max capacity is len -1
     int head;
     int tail;
 } shm_queue_t;
@@ -197,9 +197,13 @@ int main(void) {
     pthread_create(&t_b, NULL, consumer, &queue); //Create thread
 
     pthread_join(t_a, NULL); // wait t_a thread end
-    pthread_join(t_b, NULL); //wait t_b thread end
+    pthread_join(t_b, NULL); // wait t_b thread end
 
 l_out:
+    if (buf)
+    {
+        free(buf);
+    }
     return ret;
 }
 
