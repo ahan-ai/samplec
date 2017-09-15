@@ -1,4 +1,4 @@
-SUBDIRS := shm_sample
+SUBDIRS := ring_buffer_sample
 
 .PHONY: all clean
 
