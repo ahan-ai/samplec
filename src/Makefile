@@ -1,4 +1,4 @@
-SUBDIRS := volatile_sample
+SUBDIRS := shm_sample
 
 .PHONY: all clean
 
