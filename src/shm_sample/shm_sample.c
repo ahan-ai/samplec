@@ -17,9 +17,9 @@ void *thread2(void*);
 typedef struct shm_queue
 {
     void *buf;
-    size_t len; // max capacity is len -1
-    int head;
-    int tail;
+    volatile size_t len; // max capacity is len -1
+    volatile int head;
+    volatile int tail;
 } shm_queue_t;
 
 typedef struct double_shm_queue
@@ -162,7 +162,7 @@ void *pingpong_thread1(void *obj)
     double_shm_queue_t *queues = NULL;
     shm_queue_t *q1 = NULL;
     shm_queue_t *q2 = NULL;
-    int count = 1000000;
+    int count = 10000;
     const len = 16;
     char buf[len];
 
@@ -186,7 +186,7 @@ void *pingpong_thread2(void *obj)
     double_shm_queue_t *queues = NULL;
     shm_queue_t *q1 = NULL;
     shm_queue_t *q2 = NULL;
-    int count = 1000000;
+    int count = 10000;
     const len = 16;
     char buf[len];
 
@@ -249,17 +249,17 @@ void pingpong_test()
     CPU_ZERO(&cs);
     CPU_SET(cpu_thread1, &cs);
     // Make sure your test machine has at least two cores.
-    assert(pthread_setaffinity_np(t_a, sizeof(cs), &cs) == 0);
+    // assert(pthread_setaffinity_np(t_a, sizeof(cs), &cs) == 0);
     CPU_ZERO(&cs);
     CPU_SET(cpu_thread2, &cs);
-    assert(pthread_setaffinity_np(t_b, sizeof(cs), &cs) == 0);
+    // assert(pthread_setaffinity_np(t_b, sizeof(cs), &cs) == 0);
     pthread_join(t_a, NULL); // wait t_a thread end
     pthread_join(t_b, NULL); // wait t_b thread end
     clock_gettime(CLOCK_MONOTONIC, &end);
     diff = BILLION * (end.tv_sec - start.tv_sec) + end.tv_nsec - start.tv_nsec;
 
     printf("total time:%llu nanoseconds\n", (long long unsigned int)diff);
-    printf("ping pong time:%llu nanoseconds\n", (long long unsigned int)diff / 1000000);
+    printf("ping pong time:%llu nanoseconds\n", (long long unsigned int)diff / 10000);
 
 l_out:
     destory_shm(&queue1);
