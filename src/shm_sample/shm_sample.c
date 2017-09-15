@@ -152,74 +152,9 @@ void destory_shm(shm_queue_t *queue)
     }
 }
 
-void *producer(void *obj) {
-    shm_queue_t *q = NULL;
-    int data_len = 0;
-    void *buf = NULL;
-    long total_write_bytes = 0;
-    int n = 0;
-
-    q = (shm_queue_t *)obj;
-
-    while (1)
-    {
-        data_len = rand() % (q->len);
-        if (data_len == 0)
-        {
-            continue;
-        }
-        buf = malloc(data_len);
-        if (!buf)
-        {
-            continue;
-        }
-        n = write_shm(q, buf, data_len);
-        if (n > 0)
-        {
-            total_write_bytes += n;
-            printf("produce %ld\n", total_write_bytes);
-        }
-        free(buf);
-        buf = NULL;
-        sleep(1);
-    }
-}
-
-void *consumer(void *obj) {
-    shm_queue_t *q = NULL;
-    void *buf = NULL;
-    int data_len = 0;
-    int n = 0;
-    long total_read_bytes = 0;
-
-    q = (shm_queue_t*)obj;
-    while(1)
-    {
-        data_len = rand() % (q->len);
-        if (data_len == 0)
-        {
-            continue;
-        }
-        buf = malloc(data_len);
-        if (!buf)
-        {
-            continue;
-        }
-        n = read_shm(q, buf, data_len);
-        if (n > 0)
-        {
-            total_read_bytes += n;
-            printf("consume %ld\n", total_read_bytes);
-        }
-        free(buf);
-        buf = NULL;
-        sleep(1);
-    }
-}
-
 /**
  * write 1000000 times, read 1000000 times
- * evetytime 16bytes is read or write
+ * evetytime 16 bytes is read or write
  */
 void *pingpong_thread1(void *obj)
 {
@@ -274,7 +209,7 @@ void *pingpong_thread2(void *obj)
  * thread1 write to queue1, and read from queue2
  * thread2 write to queue2, and read from quque1
  *
- * caculate the arg ping-pong time of 100,0000 times
+ * calculate the arg ping-pong time of 1000000 times
  */
 void pingpong_test()
 {
@@ -313,6 +248,7 @@ void pingpong_test()
     cpu_set_t cs;
     CPU_ZERO(&cs);
     CPU_SET(cpu_thread1, &cs);
+    // Make sure your test machine has at least two cores.
     assert(pthread_setaffinity_np(t_a, sizeof(cs), &cs) == 0);
     CPU_ZERO(&cs);
     CPU_SET(cpu_thread2, &cs);
