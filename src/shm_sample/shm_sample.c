@@ -37,7 +37,11 @@ int read_shm(shm_queue_t *q, void *buf, size_t len)
     int head = q->head;
     int t = 0;
 
-    count = (tail + queue_size - head) % queue_size;
+    count = tail -head;
+    if (count < 0)
+    {
+        count += queue_size;
+    }
     if (count >= len)
     {
         if (head + len <= queue_size)
@@ -50,8 +54,13 @@ int read_shm(shm_queue_t *q, void *buf, size_t len)
             memcpy(buf, q->buf + head, t);
             memcpy(buf + t, q->buf, len - t);
         }
+        head += len;
+        if (head >= queue_size)
+        {
+            head -= queue_size;
+        }
         __asm__ __volatile ("mfence" ::: "memory");
-        q->head = (head + len) % queue_size;
+        q->head = head;
         ret = len;
     }
     else
@@ -74,7 +83,11 @@ int write_shm(shm_queue_t *q, void *buf, size_t len)
     int count = 0;
     int t = 0;
 
-    count = (tail + queue_size - head) % queue_size;
+    count = tail - head;
+    if (count < 0)
+    {
+        count += queue_size;
+    }
     if (count + len < queue_size)
     {
         if (tail + len <= queue_size)
@@ -87,8 +100,13 @@ int write_shm(shm_queue_t *q, void *buf, size_t len)
             memcpy(q->buf + tail, buf, t);
             memcpy(q->buf, buf + t, len - t);
         }
+        tail += len;
+        if (tail >= queue_size)
+        {
+            tail -= queue_size;
+        }
         __asm__ __volatile ("mfence" ::: "memory");
-        q->tail = (tail + len) % queue_size;
+        q->tail = tail;
         ret = len;
     }
     else
