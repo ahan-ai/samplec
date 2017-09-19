@@ -136,7 +136,101 @@ l_out:
     return;
 }
 
+/* A data strcut, with an u32_t in it, total size is 16Byte */
+typedef struct data_with_count_16B
+{
+    uint32_t count;
+    char     pad[12];
+} data_with_count_16B_t;
+
+void *correctness_thread1(void *obj)
+{
+    int ret = 0;
+    ring_buffer_t *q1 = NULL;
+    int count = 1000000;
+    const len = 16;
+    data_with_count_16B_t buf;
+
+    q1 = (ring_buffer_t *)obj;
+
+    assert(sizeof(buf) == 16);
+    while (count > 0)
+    {
+        buf.count = count;
+        while (write_ring_buffer(q1, &buf, len) < 0);
+        count--;
+    }    
+
+    return;
+}
+
+void *correctness_thread2(void *obj)
+{
+    int ret = 0;
+    ring_buffer_t *q1 = NULL;
+    int count = 1000000;
+    const len = 16;
+    data_with_count_16B_t buf;
+
+    q1 = (ring_buffer_t *)obj;
+
+    while (count > 0)
+    {
+        while (read_ring_buffer(q1, &buf, len) < 0);
+        assert(buf.count == count);
+        count--;
+    }
+
+    return;
+}
+/**
+ * test the correctness of ring buffer implement
+ *
+ * two threads, one write, one read, 1000000 times.
+ *
+ * write thread write the count in the buf, and 
+ * read thread make sure that it can read the expected count
+ */
+void correctness_test()
+{
+    int ret = 0;
+    pthread_t t_a, t_b;
+    ring_buffer_t queue1;
+    size_t buf_len1 = 1<<20;
+    size_t buf_len2 = 1<<20;
+    int cpu_thread1 = 0;
+    int cpu_thread2 = 1;
+
+    memset(&queue1, 0, sizeof(ring_buffer_t));
+    ret = init_ring_buffer(&queue1, buf_len1);
+    if (ret < 0)
+    {
+        goto l_out;
+    }
+
+    pthread_create(&t_a, NULL, correctness_thread1, &queue1);
+    pthread_create(&t_b, NULL, correctness_thread2, &queue1); //Create thread
+
+    cpu_set_t cs;
+    CPU_ZERO(&cs);
+    CPU_SET(cpu_thread1, &cs);
+    // Make sure your test machine has at least two cores.
+    //assert(pthread_setaffinity_np(t_a, sizeof(cs), &cs) == 0);
+    CPU_ZERO(&cs);
+    CPU_SET(cpu_thread2, &cs);
+    // assert(pthread_setaffinity_np(t_b, sizeof(cs), &cs) == 0);
+    pthread_join(t_a, NULL); // wait t_a thread end
+    pthread_join(t_b, NULL); // wait t_b thread end
+
+
+l_out:
+    destory_ring_buffer(&queue1);
+    return;
+
+}
+
 int main(void) {
-    pingpong_test();
+    //pingpong_test();
+    correctness_test();
 }
 
