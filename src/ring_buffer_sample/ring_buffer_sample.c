@@ -27,12 +27,11 @@ typedef struct double_ring_buffer
  */
 void *pingpong_thread1(void *obj)
 {
-    int ret = 0;
     double_ring_buffer_t *queues = NULL;
     ring_buffer_t *q1 = NULL;
     ring_buffer_t *q2 = NULL;
     int count = 1000000;
-    const len = 16;
+    int const len = 16;
     char buf[len];
 
     queues = (double_ring_buffer_t *)obj;
@@ -46,17 +45,16 @@ void *pingpong_thread1(void *obj)
         count--;
     }    
 
-    return;
+    return NULL;
 }
 
 void *pingpong_thread2(void *obj)
 {
-    int ret = 0;
     double_ring_buffer_t *queues = NULL;
     ring_buffer_t *q1 = NULL;
     ring_buffer_t *q2 = NULL;
     int count = 1000000;
-    const len = 16;
+    int const len = 16;
     char buf[len];
 
     queues = (double_ring_buffer_t *)obj;
@@ -70,7 +68,7 @@ void *pingpong_thread2(void *obj)
         count--;
     }    
 
-    return;
+    return NULL;
 }
 
 /**
@@ -88,7 +86,6 @@ void pingpong_test()
     double_ring_buffer_t queues;
     size_t buf_len1 = 1<<20;
     size_t buf_len2 = 1<<20;
-    double total_time, pingpong_time;
     int cpu_thread1 = 0;
     int cpu_thread2 = 1;
     struct timespec start, end;
@@ -145,10 +142,9 @@ typedef struct data_with_count_16B
 
 void *correctness_thread1(void *obj)
 {
-    int ret = 0;
     ring_buffer_t *q1 = NULL;
     int count = 1000000;
-    const len = 16;
+    const int len = 16;
     data_with_count_16B_t buf;
 
     q1 = (ring_buffer_t *)obj;
@@ -161,15 +157,14 @@ void *correctness_thread1(void *obj)
         count--;
     }    
 
-    return;
+    return NULL;
 }
 
 void *correctness_thread2(void *obj)
 {
-    int ret = 0;
     ring_buffer_t *q1 = NULL;
     int count = 1000000;
-    const len = 16;
+    const int len = 16;
     data_with_count_16B_t buf;
 
     q1 = (ring_buffer_t *)obj;
@@ -181,7 +176,7 @@ void *correctness_thread2(void *obj)
         count--;
     }
 
-    return;
+    return NULL;
 }
 /**
  * test the correctness of ring buffer implement
@@ -197,7 +192,6 @@ void correctness_test()
     pthread_t t_a, t_b;
     ring_buffer_t queue1;
     size_t buf_len1 = 1<<20;
-    size_t buf_len2 = 1<<20;
     int cpu_thread1 = 0;
     int cpu_thread2 = 1;
 
@@ -215,10 +209,10 @@ void correctness_test()
     CPU_ZERO(&cs);
     CPU_SET(cpu_thread1, &cs);
     // Make sure your test machine has at least two cores.
-    //assert(pthread_setaffinity_np(t_a, sizeof(cs), &cs) == 0);
+    assert(pthread_setaffinity_np(t_a, sizeof(cs), &cs) == 0);
     CPU_ZERO(&cs);
     CPU_SET(cpu_thread2, &cs);
-    // assert(pthread_setaffinity_np(t_b, sizeof(cs), &cs) == 0);
+    assert(pthread_setaffinity_np(t_b, sizeof(cs), &cs) == 0);
     pthread_join(t_a, NULL); // wait t_a thread end
     pthread_join(t_b, NULL); // wait t_b thread end
 
@@ -230,7 +224,8 @@ l_out:
 }
 
 int main(void) {
-    //pingpong_test();
+    pingpong_test();
     correctness_test();
+    return 0;
 }
 

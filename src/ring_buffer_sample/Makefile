@@ -1,9 +1,24 @@
-all: ring_buffer_sample
+TARGET = ring_buffer_sample
+CC = gcc
+CFLAGS = -O2 -Wall -Werror -g
+
+all: $(TARGET)
 
 .PHONY: all clean
 
-ring_buffer_sample: ring_buffer_sample.c ring_buffer.c ring_buffer.h
-	gcc -O3 -g -o ring_buffer_sample -lpthread -lrt ring_buffer_sample.c ring_buffer.c ring_buffer.h
+SRCDIR = .
+SRCS = $(wildcard $(SRCDIR)/*.c)
+OBJS = $(patsubst %.c, %.o, $(SRCS))
+$(warning $(OBJS))
+INC = -I.
+LIBS = -lpthread -lrt
+
+$(OBJS): %.o:%.c
+	$(CC) $(CFLAGS) $(INC) -o $@ -c $<
+
+$(TARGET): $(OBJS)
+	$(CC) $(CFLAGS) $(INC) -o $@ $(LIBS) $(OBJS)
 
 clean:
+	rm -rf *.o
 	rm -rf ring_buffer_sample
