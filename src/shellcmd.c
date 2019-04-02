@@ -296,7 +296,7 @@ int main()
     char *p_stderr = NULL;
     int stdout_size = 0;
     int stderr_size = 0;
-    rc = shellcmd("ls -l /home/parastor/log/;ls notexist", &exitcode, &p_stdout, &stdout_size, &p_stderr, 
+    rc = shellcmd("ls -l /home;ls notexist", &exitcode, &p_stdout, &stdout_size, &p_stderr, 
             &stderr_size);
     if (rc < 0)
     {
