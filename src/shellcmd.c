@@ -172,10 +172,12 @@ static int read_all_output(
         if (!stdout_finished)
         {
             FD_SET(stdout_fd, &rfds);
+            maxfd = stdout_fd + 1;
         }
         if (!stderr_finished)
         {
             FD_SET(stderr_fd, &rfds);
+            maxfd = (maxfd > stderr_fd + 1) ? (maxfd): (stderr_fd + 1);
         }
         rc = select(maxfd, &rfds, NULL, NULL, NULL);
         if (rc == -1)
@@ -262,8 +264,6 @@ l_fail:
 int shellcmd(char *p_cmd, int *p_exitcode, char **pp_stdout, 
         int *p_stdout_size, char **pp_stderr, int *p_stderr_size)
 {
-    char outbuf[1024];
-    char errbuf[1024];
     int rc = 0;
     int pid = 0;
     int stdout_fd = 0;
