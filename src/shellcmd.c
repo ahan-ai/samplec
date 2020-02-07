@@ -3,6 +3,7 @@
 #include <malloc.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <poll.h>
 
 /**
  * mypopen will run the p_cmdstring as a shell command.
@@ -154,6 +155,7 @@ static int read_all_output(
 {
     int rc = 0;
     fd_set rfds;
+    struct pollfd fds[2];
     char *p_stdout_buf = NULL;
     char *p_stderr_buf = NULL;
     int stdout_offset = 0;
@@ -164,56 +166,61 @@ static int read_all_output(
     int stdout_finished = 0;
     int stderr_finished = 0;
 
-    maxfd = (stdout_fd > stderr_fd) ? (stdout_fd + 1): (stderr_fd + 1);
+    fds[0].fd = stdout_fd;
+    fds[0].events = POLLIN | POLLPRI;
+    fds[1].fd = stderr_fd;
+    fds[1].events = POLLIN | POLLPRI;
     while (!stdout_finished || !stderr_finished)
     {
         
-        FD_ZERO(&rfds);
-        if (!stdout_finished)
-        {
-            FD_SET(stdout_fd, &rfds);
-            maxfd = stdout_fd + 1;
-        }
-        if (!stderr_finished)
-        {
-            FD_SET(stderr_fd, &rfds);
-            maxfd = (maxfd > stderr_fd + 1) ? (maxfd): (stderr_fd + 1);
-        }
-        rc = select(maxfd, &rfds, NULL, NULL, NULL);
+        rc = poll(fds, 2, -1);
         if (rc == -1)
         {
-            if (errno == EINTR)
-            {
-                continue;
-            }
-            else
-            {
-                goto l_fail;
-            }
+            rc = -errno;
+            goto l_fail;
         }
-        
         if (rc == 0)
         {
             // No fd is ready.
             break;
         }
-        if (FD_ISSET(stdout_fd, &rfds))
+        if ((fds[0].revents & POLLIN) || (fds[0].revents & POLLPRI) || (fds[0].revents & POLLHUP))
         {
             // Read standard output.
-            rc = read_output(stdout_fd, &p_stdout_buf, &stdout_offset, &stdout_buf_size);
+            if (NULL != pp_stdout)
+            {
+                rc = read_output(stdout_fd, &p_stdout_buf, &stdout_offset, &stdout_buf_size);
+            }
+            else
+            {
+                rc = read_output(stdout_fd, NULL, &stdout_offset, &stdout_buf_size);
+            }
             if (rc < 0)
             {
-                goto l_fail; 
+                goto l_fail;
             }
             if (rc == 0)
             {
-                stdout_finished = 1;        
+                stdout_finished = 1;
             }
         }
-        if (FD_ISSET(stderr_fd, &rfds))
+        else if (fds[0].revents & POLLERR)
+        {
+            rc = -1;
+            goto l_fail;
+        }
+        
+        if ((fds[1].revents & POLLIN) || (fds[1].revents & POLLPRI) || (fds[1].revents & POLLHUP))
         {
             // Read error output.
-            rc = read_output(stderr_fd, &p_stderr_buf, &stderr_offset, &stderr_buf_size);
+            if (NULL != pp_stdout)
+            {
+                rc = read_output(stderr_fd, &p_stderr_buf, &stderr_offset, &stderr_buf_size);
+            }
+            else
+            {
+                rc = read_output(stderr_fd, NULL, &stderr_offset, &stderr_buf_size);
+            }
             if (rc < 0)
             {
                 goto l_fail;
@@ -223,13 +230,30 @@ static int read_all_output(
                 stderr_finished = 1;
             }
         }
+        else if (fds[1].revents & POLLERR)
+        {
+            rc = -1;
+            goto l_fail;
+        }
     }
     
 l_out:
-    *pp_stdout = p_stdout_buf;
-    *p_stdout_size = stdout_offset;
-    *pp_stderr = p_stderr_buf;
-    *p_stderr_size = stderr_offset;
+    if (NULL != pp_stdout)
+    {
+        *pp_stdout = p_stdout_buf;
+    }
+    if (NULL != p_stdout_size)
+    {
+        *p_stdout_size = stdout_offset;
+    }
+    if (NULL != pp_stderr)
+    {
+        *pp_stderr = p_stderr_buf;
+    }
+    if (NULL != p_stderr_size)
+    {
+        *p_stderr_size = stderr_offset;
+    }
     return rc;
 
 l_fail:
